@@ -1,13 +1,18 @@
 const expect = require('expect');
 const request = require('supertest');
+const {ObjectID} = require('mongodb')
 
 const {app} = require('./../server');
 const {Todo} = require('./../models/todo');
 
+
 const todos = [{
+  _id: new ObjectID(),
   text:'I am coming home'
 },
-  {text:'I am going to work'}];
+  {
+    _id: new ObjectID(),
+    text:'I am going to work'}];
 
 beforeEach((done) => {
   Todo.remove({}).then(()=>{
@@ -59,7 +64,36 @@ describe('POST /todos', () => {
   });
 });
 
-describe('GET Route', (done) => {
+describe('GET /todos/id', (done) => {
+  it('should give 404 for non ObjectID', (done) =>{
+    request(app)
+    .get('/todos/123abc')
+    .expect(404)
+    .end(done);
+  });
+
+  it('should give 404 if objectId not found', (done) => {
+    var hexId = new ObjectID().toHexString();
+
+    request(app)
+    .get(`/todos/${hexId}`)
+    .expect(404)
+    .end(done);
+  });
+
+  it('should have a todo doc', (done) => {
+    request(app)
+    .get(`/todos/${todos[0]._id.toHexString()}`)
+    .expect(200)
+    .expect((res)=>{
+      expect(res.body.todo.text).toBe(todos[0].text)
+    })
+    .end(done);
+  });
+
+});
+
+describe('GET /todos', (done) => {
   it('should get all todos', () => {
     request(app)
     .get('/todos')
